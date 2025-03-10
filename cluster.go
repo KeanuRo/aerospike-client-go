@@ -379,9 +379,11 @@ func (clstr *Cluster) aggregateNodeStats(nodeList []*Node) {
 	for _, node := range nodeList {
 		h := node.host.String()
 		if stats, exists := clstr.stats[h]; exists {
-			stats.aggregate(node.stats.getAndReset())
+			nr := node.stats.getAndReset()
+			stats.aggregate(nr)
 		} else {
-			clstr.stats[h] = node.stats.getAndReset()
+			nr := node.stats.getAndReset()
+			clstr.stats[h] = nr
 		}
 	}
 }
