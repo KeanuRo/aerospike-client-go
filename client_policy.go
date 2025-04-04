@@ -17,6 +17,8 @@ package aerospike
 import (
 	"crypto/tls"
 	"time"
+
+	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
 )
 
 // ClientPolicy encapsulates parameters for client policy command.
@@ -165,6 +167,9 @@ type ClientPolicy struct {
 	// Peers nodes for the cluster are not discovered and seed nodes are
 	// retained despite connection failures.
 	SeedOnlyCluster bool // = false
+
+	// ConfigProvider is used to check and update the policy of the client.
+	configProvider dynconfig.ConfigProvider
 }
 
 // NewClientPolicy generates a new ClientPolicy with default values.
@@ -183,6 +188,7 @@ func NewClientPolicy() *ClientPolicy {
 		MaxErrorRate:                100,
 		ErrorRateWindow:             1,
 		SeedOnlyCluster:             false,
+		configProvider:              register("yaml", nil),
 	}
 }
 

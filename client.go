@@ -37,6 +37,7 @@ const unreachable = "UNREACHABLE"
 type Client struct {
 	cluster *Cluster
 
+	dynConfig *DynConfig
 	// DefaultPolicy is used for all read commands without a specific policy.
 	DefaultPolicy *BasePolicy
 	// DefaultBatchPolicy is the default parent policy used in batch read commands. Base policy fields
@@ -118,6 +119,7 @@ func NewClientWithPolicyAndHost(policy *ClientPolicy, hosts ...*Host) (*Client, 
 
 	client := &Client{
 		cluster:                  cluster,
+		dynConfig:                NewDynConfig(policy),
 		DefaultPolicy:            NewPolicy(),
 		DefaultBatchPolicy:       NewBatchPolicy(),
 		DefaultBatchReadPolicy:   NewBatchReadPolicy(),
@@ -132,6 +134,9 @@ func NewClientWithPolicyAndHost(policy *ClientPolicy, hosts ...*Host) (*Client, 
 		DefaultTxnVerifyPolicy:   NewTxnVerifyPolicy(),
 		DefaultTxnRollPolicy:     NewTxnRollPolicy(),
 	}
+
+	client.dynConfig = NewDynConfig(policy)
+	go client.dynConfig.watchConfig()
 
 	runtime.SetFinalizer(client, clientFinalizer)
 	return client, err
