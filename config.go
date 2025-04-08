@@ -1,6 +1,7 @@
 package aerospike
 
 import (
+	"fmt"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
@@ -11,9 +12,7 @@ import (
 )
 
 var configProviderMu sync.RWMutex
-var configProviders = make(map[string]dynconfig.ConfigProvider)
-
-const defaultConfigProviderName = "yaml"
+var configProvider *dynconfig.ConfigProvider
 
 type DynConfig struct {
 	lock               sync.RWMutex
@@ -25,122 +24,106 @@ type DynConfig struct {
 }
 
 func NewDynConfig(policy *ClientPolicy) *DynConfig {
-	return &DynConfig{
+	dynConfig := &DynConfig{
 		clientPolicy:       policy,
 		configWatchChannel: make(chan struct{}),
+		configInitialized:  &atomic.Bool{},
 	}
+	dynConfig.wgConfig.Add(1)
+
+	return dynConfig
 }
 
-func register(name string, provider dynconfig.ConfigProvider) dynconfig.ConfigProvider {
+func register(provider *dynconfig.ConfigProvider) {
 	configProviderMu.Lock()
 	defer configProviderMu.Unlock()
-
-	if _, ok := configProviders[name]; ok {
-		panic("provider already registered")
-	}
 
 	if provider == nil {
 		panic("provider is nil")
 	}
 
-	if _, dup := configProviders[name]; dup {
-		panic("config provider called twice" + name)
-	}
-
-	configProviders[name] = provider
-
-	return configProviders[name]
+	configProvider = provider
 }
 
 func (dc *DynConfig) loadConfig() error {
 	configProviderMu.RLock()
 	defer configProviderMu.RUnlock()
 
-	if !dc.configInitialized.Load() {
-		// Get entire config and update/initialize the config
-		if len(configProviders) == 0 {
-			// We should never get here, just in case  we do initialize to default config
-			logger.Logger.Warn("Configuration provider has not been registered. Using default config provider.")
-			register(defaultConfigProviderName, nil)
-		} else {
-			for _, provider := range configProviders {
-				_, loadedConfig := provider.LoadConfig()
-				dc.lock.Lock()
-				dc.config = loadedConfig
-				dc.lock.Unlock()
-				break
-			}
-		}
+	if !dc.configInitialized.Load() && configProvider != nil {
+		logger.Logger.Debug("Initializing configuration...")
+		dc.initConfig()
+		dc.configInitialized.Store(true)
 	} else {
-		// get static and dynamic parts of the config
-		if len(configProviders) > 1 {
-			logger.Logger.Warn("Multiple config providers registered. Using the first one.")
-			if defaultConfigProvider, ok := configProviders[defaultConfigProviderName]; ok {
-				_, loadedConfig := defaultConfigProvider.LoadConfig()
-				dc.lock.Lock()
-				dc.config.Dynamic = loadedConfig.Dynamic
-				dc.lock.Unlock()
-			}
-		} else if len(configProviders) == 1 {
-			for _, provider := range configProviders {
-				_, loadedConfig := provider.LoadConfig()
-				dc.lock.Lock()
-				dc.config.Dynamic = loadedConfig.Dynamic
-				dc.lock.Unlock()
-				break
-			}
-		}
+		dc.providerLoadConfig()
 	}
 
 	return nil
+}
+
+func (dc *DynConfig) providerLoadConfig() {
+	loadedConfig := (*configProvider).LoadConfig()
+	dc.lock.Lock()
+	if loadedConfig != nil {
+		dc.config.Dynamic = loadedConfig.Dynamic
+	}
+	dc.lock.Unlock()
+}
+
+func (dc *DynConfig) initConfig() {
+	loadedConfig := (*configProvider).LoadConfig()
+	dc.lock.Lock()
+	if loadedConfig != nil {
+		dc.config = loadedConfig
+	}
+	dc.lock.Unlock()
 }
 
 func (dc *DynConfig) watchConfig() {
 	logger.Logger.Info("Starting the config watch goroutine...")
 
 	defer func() {
+		// TODO: Add exponential backoff here to resource starvation
 		if r := recover(); r != nil {
 			logger.Logger.Error("Watch config goroutine crashed: %s", debug.Stack())
+			fmt.Printf("Watch config goroutine crashed: %s\n", debug.Stack())
 			go dc.watchConfig()
 		}
 	}()
 
 	defer dc.wgConfig.Done()
 
-	tendInterval := dc.clientPolicy.TendInterval
-	if tendInterval <= 10*time.Millisecond {
-		tendInterval = 10 * time.Millisecond
+	configInterval := dc.clientPolicy.ConfigInterval
+	if configInterval <= 10*time.Millisecond {
+		configInterval = 10 * time.Millisecond
 	}
-
 Loop:
 	for {
+		if !dc.configInitialized.Load() {
+			logger.Logger.Debug("Initializing configuration...")
+			tm := time.Now()
+			if err := dc.loadConfig(); err != nil {
+				logger.Logger.Warn(err.Error())
+			}
+			if configDuration := time.Since(tm); configDuration > dc.clientPolicy.ConfigInterval {
+				logger.Logger.Warn("Reload took %s, but your requested ConfigInterval is %s. "+
+					"Reload is slower than the interval and may fall behind changes.",
+					configDuration, dc.clientPolicy.ConfigInterval)
+			}
+		}
+
 		select {
 		case <-dc.configWatchChannel:
 			logger.Logger.Debug("Watch config channel closed. Stopping watch goroutine.")
 			break Loop
-		case <-time.After(tendInterval):
+		case <-time.After(configInterval):
 			tm := time.Now()
 			if err := dc.loadConfig(); err != nil {
 				logger.Logger.Warn(err.Error())
 			}
 
-			// Tending took longer than requested tend interval.
-			// Tending is too slow for the cluster, and may be falling behind schedule.
-			if tendDuration := time.Since(tm); tendDuration > dc.clientPolicy.TendInterval {
-				logger.Logger.Warn("Watching took %s, while your requested ClientPolicy.TendInterval is %s. Config fetches are slower than the interval, and may be falling behind the changes.", tendDuration, dc.clientPolicy.TendInterval)
+			if configDuration := time.Since(tm); configDuration > dc.clientPolicy.ConfigInterval {
+				logger.Logger.Warn("Watching took %s, while your requested ClientPolicy.TendInterval is %s. Config fetches are slower than the interval, and may be falling behind the changes.", configDuration, dc.clientPolicy.TendInterval)
 			}
 		}
 	}
-}
-
-func (dc *DynConfig) updateConfig(config *dynconfig.Config) {
-	dc.lock.Lock()
-	defer dc.lock.Unlock()
-
-	if config == nil {
-		logger.Logger.Error("Config is nil")
-		return
-	}
-
-	dc.config = config
 }

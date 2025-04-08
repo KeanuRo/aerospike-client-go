@@ -2140,6 +2140,7 @@ func (clnt *Client) getUsableBatchUDFPolicy(policy *BatchUDFPolicy) *BatchUDFPol
 }
 
 func (clnt *Client) getUsableWritePolicy(policy *WritePolicy) *WritePolicy {
+
 	if policy == nil {
 		if clnt.DefaultWritePolicy != nil {
 			return clnt.DefaultWritePolicy

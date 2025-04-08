@@ -19,6 +19,7 @@ import (
 	"time"
 
 	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
+	"github.com/aerospike/aerospike-client-go/v8/config/provider"
 )
 
 // ClientPolicy encapsulates parameters for client policy command.
@@ -169,11 +170,16 @@ type ClientPolicy struct {
 	SeedOnlyCluster bool // = false
 
 	// ConfigProvider is used to check and update the policy of the client.
-	configProvider dynconfig.ConfigProvider
+	configProvider *dynconfig.ConfigProvider
+
+	// Determianes the interval for checking for configuration changes using configProvider.
+	ConfigInterval time.Duration // = 5
 }
 
 // NewClientPolicy generates a new ClientPolicy with default values.
 func NewClientPolicy() *ClientPolicy {
+	defaultConfigProvider := provider.NewYamlConfigProvider()
+	register(&defaultConfigProvider)
 	return &ClientPolicy{
 		AuthMode:                    AuthModeInternal,
 		Timeout:                     30 * time.Second,
@@ -188,7 +194,8 @@ func NewClientPolicy() *ClientPolicy {
 		MaxErrorRate:                100,
 		ErrorRateWindow:             1,
 		SeedOnlyCluster:             false,
-		configProvider:              register("yaml", nil),
+		configProvider:              &defaultConfigProvider,
+		ConfigInterval:              time.Second * 5,
 	}
 }
 
