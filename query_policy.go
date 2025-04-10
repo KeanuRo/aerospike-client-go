@@ -14,6 +14,12 @@
 
 package aerospike
 
+import (
+	"time"
+
+	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
+)
+
 // QueryPolicy encapsulates parameters for policy attributes used in query operations.
 //
 // Inherited Policy fields Policy.Txn are ignored in query commands.
@@ -54,5 +60,71 @@ type QueryPolicy struct {
 func NewQueryPolicy() *QueryPolicy {
 	return &QueryPolicy{
 		MultiPolicy: *NewMultiPolicy(),
+	}
+}
+
+// copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyQueryPolicy(src *QueryPolicy) *QueryPolicy {
+	response := NewQueryPolicy()
+	response.Txn = src.Txn
+	response.FilterExpression = src.FilterExpression
+	response.ReadModeAP = src.ReadModeAP
+	response.ReadModeSC = src.ReadModeSC
+	response.TotalTimeout = src.TotalTimeout
+	response.SocketTimeout = src.SocketTimeout
+	response.MaxRetries = src.MaxRetries
+	response.ReadTouchTTLPercent = src.ReadTouchTTLPercent
+	response.SleepBetweenRetries = src.SleepBetweenRetries
+	response.SleepMultiplier = src.SleepMultiplier
+	response.ExitFastOnExhaustedConnectionPool = src.ExitFastOnExhaustedConnectionPool
+	response.SendKey = src.SendKey
+	response.UseCompression = src.UseCompression
+	response.ReplicaPolicy = src.ReplicaPolicy
+	response.IncludeBinData = src.IncludeBinData
+
+	return response
+}
+
+// applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the QueryPolicy.
+func applyConfigToQueryPolicy(policy *QueryPolicy, config *dynconfig.Config) *QueryPolicy {
+	if config != nil && config.Dynamic != nil && config.Dynamic.Read != nil {
+		var responsePolicy *QueryPolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyQueryPolicy(policy)
+		} else {
+			responsePolicy = NewQueryPolicy()
+		}
+
+		if config.Dynamic.Query.ReadModeAp != nil {
+			responsePolicy.ReadModeAP = mapReadModeAPToReadModeAP(*config.Dynamic.Query.ReadModeAp)
+		}
+		if config.Dynamic.Query.ReadModeSc != nil {
+			responsePolicy.ReadModeSC = mapReadModeSCToReadModeSC(*config.Dynamic.Query.ReadModeSc)
+		}
+		if config.Dynamic.Query.TotalTimeout != nil {
+			responsePolicy.TotalTimeout = time.Duration(*config.Dynamic.Query.TotalTimeout)
+		}
+		if config.Dynamic.Query.SocketTimeout != nil {
+			responsePolicy.SocketTimeout = time.Duration(*config.Dynamic.Query.SocketTimeout)
+		}
+		if config.Dynamic.Query.MaxRetries != nil {
+			responsePolicy.MaxRetries = *config.Dynamic.Query.MaxRetries
+		}
+		if config.Dynamic.Query.SleepBetweenRetries != nil {
+			responsePolicy.SleepBetweenRetries = time.Duration(*config.Dynamic.Query.SleepBetweenRetries)
+		}
+		if config.Dynamic.Query.Replica != nil {
+			responsePolicy.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.Query.Replica)
+		}
+
+		if config.Dynamic.Query.IncludeBinData != nil {
+			responsePolicy.IncludeBinData = *config.Dynamic.Query.IncludeBinData
+		}
+
+		return responsePolicy
+	} else {
+		return policy
 	}
 }

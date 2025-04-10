@@ -1,5 +1,7 @@
 package dynconfig
 
+import "time"
+
 type ConfigProvider interface {
 	LoadConfig() *Config
 }
@@ -60,25 +62,26 @@ type Client struct {
 type Read struct {
 	ReadModeAp          *ReadModeAp `yaml:"read_mode_ap"`
 	ReadModeSc          *ReadModeSc `yaml:"read_mode_sc"`
-	ConnectTimeout      *int        `yaml:"connect_timeout"`
+	ConnectTimeout      *Duration   `yaml:"connect_timeout"`
 	FailOnFilteredOut   *bool       `yaml:"fail_on_filtered_out"`
 	Replica             *Replica    `yaml:"replica"`
-	SleepBetweenRetries *int        `yaml:"sleep_between_retries"`
-	SocketTimeout       *int        `yaml:"socket_timeout"`
+	SleepBetweenRetries *Duration   `yaml:"sleep_between_retries"`
+	SocketTimeout       *Duration   `yaml:"socket_timeout"`
 	TimeoutDelay        *int        `yaml:"timeout_delay"`
-	TotalTimeout        *int        `yaml:"total_timeout"`
+	TotalTimeout        *Duration   `yaml:"total_timeout"`
 	MaxRetries          *int        `yaml:"max_retries"`
 }
 
 type Write struct {
-	ConnectTimeout      *int     `yaml:"connect_timeout"`
-	FailOnFilteredOut   *bool    `yaml:"fail_on_filtered_out"`
-	Replica             *Replica `yaml:"replica"`
-	SendKey             *bool    `yaml:"send_key"`
-	SleepBetweenRetries *int     `yaml:"sleep_between_retries"`
-	SocketTimeout       *int     `yaml:"socket_timeout"`
-	MaxRetries          *int     `yaml:"max_retries"`
-	DurableDelete       *bool    `yaml:"durable_delete"`
+	ConnectTimeout      *Duration `yaml:"connect_timeout"`
+	FailOnFilteredOut   *bool     `yaml:"fail_on_filtered_out"`
+	Replica             *Replica  `yaml:"replica"`
+	SendKey             *bool     `yaml:"send_key"`
+	SleepBetweenRetries *Duration `yaml:"sleep_between_retries"`
+	SocketTimeout       *Duration `yaml:"socket_timeout"`
+	TotalTimeout        *Duration `yaml:"total_timeout"`
+	MaxRetries          *int      `yaml:"max_retries"`
+	DurableDelete       *bool     `yaml:"durable_delete"`
 }
 
 type Query struct {
@@ -86,10 +89,10 @@ type Query struct {
 	ReadModeSc          *ReadModeSc `yaml:"read_mode_sc"`
 	ConnectTimeout      *int        `yaml:"connect_timeout"`
 	Replica             *Replica    `yaml:"replica"`
-	SleepBetweenRetries *int        `yaml:"sleep_between_retries"`
-	SocketTimeout       *int        `yaml:"socket_timeout"`
+	SleepBetweenRetries *Duration   `yaml:"sleep_between_retries"`
+	SocketTimeout       *Duration   `yaml:"socket_timeout"`
 	TimeoutDelay        *int        `yaml:"timeout_delay"`
-	TotalTimeout        *int        `yaml:"total_timeout"`
+	TotalTimeout        *Duration   `yaml:"total_timeout"`
 	MaxRetries          *int        `yaml:"max_retries"`
 	IncludeBinData      *bool       `yaml:"include_bin_data"`
 	InfoTimeout         *int        `yaml:"info_timeout"`
@@ -197,57 +200,59 @@ type Metrics struct {
 type ReadModeAp int
 
 const (
-	One ReadModeAp = iota
+	ONE ReadModeAp = iota
 	All
 )
 
 var readModeAp = map[ReadModeAp]string{
-	One: "one",
-	All: "all",
+	ONE: "ONE",
+	All: "ALL",
 }
 
 type ReadModeSc int
 
 const (
-	Session ReadModeSc = iota
-	Linearize
-	AllowReplica
-	AllowUnavailable
+	SESSION ReadModeSc = iota
+	LINEARIZE
+	ALLOWREPLICA
+	ALLOWUNAVAILABLE
 )
 
 var readModeSc = map[ReadModeSc]string{
-	Session:          "session",
-	Linearize:        "linearize",
-	AllowReplica:     "allow_replica",
-	AllowUnavailable: "allow_unavailable",
+	SESSION:          "SESSION",
+	LINEARIZE:        "LINEARIZE",
+	ALLOWREPLICA:     "ALLOW_REPLICA",
+	ALLOWUNAVAILABLE: "ALLOW_UNAVAILABLE",
 }
 
 type Replica int
 
 const (
-	Master Replica = iota
-	MasterProles
-	Sequence
-	PreferRack
+	MASTER Replica = iota
+	MASTER_PROLES
+	SEQUENCE
+	PREFER_RACK
 )
 
 var replica = map[Replica]string{
-	Master:       "master",
-	MasterProles: "master_proles",
-	Sequence:     "sequence",
-	PreferRack:   "prefer_rack",
+	MASTER:        "MASTER",
+	MASTER_PROLES: "MASTER_PROLES",
+	SEQUENCE:      "SEQUENCE",
+	PREFER_RACK:   "PREFER_RACK",
 }
 
-type Duration int
+type ExpectedDuration int
 
 const (
-	Long Duration = iota
-	Short
-	LongRelaxAp
+	LONG ExpectedDuration = iota
+	SHORT
+	LONG_RELAX_AP
 )
 
-var duration = map[Duration]string{
-	Long:        "long",
-	Short:       "short",
-	LongRelaxAp: "long_relax_ap",
+var duration = map[ExpectedDuration]string{
+	LONG:          "LONG",
+	SHORT:         "SHORT",
+	LONG_RELAX_AP: "LONG_RELAX_AP",
 }
+
+type Duration time.Duration

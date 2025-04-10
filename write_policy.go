@@ -16,6 +16,7 @@ package aerospike
 
 import (
 	"math"
+	"time"
 )
 
 const (
@@ -102,4 +103,86 @@ func NewWritePolicy(generation, expiration uint32) *WritePolicy {
 	res.MaxRetries = 0
 
 	return res
+}
+
+// copyWritePolicy creates a new WritePolicy instance and copies the values from the source WritePolicy.
+func copyWritePolicy(src *WritePolicy) *WritePolicy {
+	response := NewWritePolicy(0, 0)
+	response.Txn = src.Txn
+	response.FilterExpression = src.FilterExpression
+	response.ReadModeAP = src.ReadModeAP
+	response.ReadModeSC = src.ReadModeSC
+	response.TotalTimeout = src.TotalTimeout
+	response.SocketTimeout = src.SocketTimeout
+	response.MaxRetries = src.MaxRetries
+	response.ReadTouchTTLPercent = src.ReadTouchTTLPercent
+	response.SleepBetweenRetries = src.SleepBetweenRetries
+	response.SleepMultiplier = src.SleepMultiplier
+	response.ExitFastOnExhaustedConnectionPool = src.ExitFastOnExhaustedConnectionPool
+	response.SendKey = src.SendKey
+	response.UseCompression = src.UseCompression
+	response.ReplicaPolicy = src.ReplicaPolicy
+	response.RecordExistsAction = src.RecordExistsAction
+	response.GenerationPolicy = src.GenerationPolicy
+	response.CommitLevel = src.CommitLevel
+	response.Generation = src.Generation
+	response.Expiration = src.Expiration
+	response.RespondPerEachOp = src.RespondPerEachOp
+	response.DurableDelete = src.DurableDelete
+	response.OnLockingOnly = src.OnLockingOnly
+
+	return response
+}
+
+// applyConfigToWritePolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the WritePolicy.
+func applyConfigToWritePolicy(policy *WritePolicy, dynConfig *DynConfig) *WritePolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.Write != nil {
+		var responseWritePolicy *WritePolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responseWritePolicy = copyWritePolicy(policy)
+		} else {
+			responseWritePolicy = NewWritePolicy(0, 0)
+		}
+
+		if config.Dynamic.Write.TotalTimeout != nil {
+			responseWritePolicy.TotalTimeout = time.Duration(*config.Dynamic.Write.TotalTimeout)
+		}
+		if config.Dynamic.Write.SocketTimeout != nil {
+			responseWritePolicy.SocketTimeout = time.Duration(*config.Dynamic.Write.SocketTimeout)
+		}
+		if config.Dynamic.Write.MaxRetries != nil {
+			responseWritePolicy.MaxRetries = *config.Dynamic.Write.MaxRetries
+		}
+		if config.Dynamic.Write.DurableDelete != nil {
+			responseWritePolicy.DurableDelete = *config.Dynamic.Write.DurableDelete
+		}
+		if config.Dynamic.Write.SleepBetweenRetries != nil {
+			responseWritePolicy.SleepBetweenRetries = time.Duration(*config.Dynamic.Write.SleepBetweenRetries)
+		}
+		if config.Dynamic.Write.SendKey != nil {
+			responseWritePolicy.SendKey = *config.Dynamic.Write.SendKey
+		}
+		if config.Dynamic.Write.Replica != nil {
+			responseWritePolicy.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.Write.Replica)
+		}
+		if config.Dynamic.Write.MaxRetries != nil {
+			responseWritePolicy.MaxRetries = *config.Dynamic.Write.MaxRetries
+		}
+
+		return responseWritePolicy
+
+	} else {
+		return policy
+	}
 }

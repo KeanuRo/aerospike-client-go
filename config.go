@@ -46,8 +46,8 @@ func register(provider *dynconfig.ConfigProvider) {
 }
 
 func (dc *DynConfig) loadConfig() error {
-	configProviderMu.RLock()
-	defer configProviderMu.RUnlock()
+	configProviderMu.Lock()
+	defer configProviderMu.Unlock()
 
 	if !dc.configInitialized.Load() && configProvider != nil {
 		logger.Logger.Debug("Initializing configuration...")
@@ -70,12 +70,13 @@ func (dc *DynConfig) providerLoadConfig() {
 }
 
 func (dc *DynConfig) initConfig() {
+	dc.lock.RLock()
+	defer dc.lock.RUnlock()
+
 	loadedConfig := (*configProvider).LoadConfig()
-	dc.lock.Lock()
 	if loadedConfig != nil {
 		dc.config = loadedConfig
 	}
-	dc.lock.Unlock()
 }
 
 func (dc *DynConfig) watchConfig() {

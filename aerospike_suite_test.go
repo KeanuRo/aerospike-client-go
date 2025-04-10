@@ -41,7 +41,7 @@ import (
 var (
 	hosts                = flag.String("hosts", "", "Comma separated Aerospike server seed hostnames or IP addresses and ports. eg: s1:3000,s2:3000,s3:3000")
 	host                 = flag.String("h", "127.0.0.1", "Aerospike server seed hostnames or IP addresses")
-	port                 = flag.Int("p", 3000, "Aerospike server seed hostname or IP address port number.")
+	port                 = flag.Int("p", 3100, "Aerospike server seed hostname or IP address port number.")
 	user                 = flag.String("U", "", "Username.")
 	password             = flag.String("P", "", "Password.")
 	authMode             = flag.String("A", "internal", "Authentication mode: internal | external")

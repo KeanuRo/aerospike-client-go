@@ -328,7 +328,7 @@ func (clnt *Client) PutPayload(policy *WritePolicy, key *Key, payload []byte) Er
 // handled when the record already exists.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Put(policy *WritePolicy, key *Key, binMap BinMap) Error {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -350,7 +350,7 @@ func (clnt *Client) Put(policy *WritePolicy, key *Key, binMap BinMap) Error {
 // This method avoids using the BinMap allocation and iteration and is lighter on GC.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) PutBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -2140,7 +2140,6 @@ func (clnt *Client) getUsableBatchUDFPolicy(policy *BatchUDFPolicy) *BatchUDFPol
 }
 
 func (clnt *Client) getUsableWritePolicy(policy *WritePolicy) *WritePolicy {
-
 	if policy == nil {
 		if clnt.DefaultWritePolicy != nil {
 			return clnt.DefaultWritePolicy
@@ -2148,6 +2147,10 @@ func (clnt *Client) getUsableWritePolicy(policy *WritePolicy) *WritePolicy {
 		return NewWritePolicy(0, 0)
 	}
 	return policy
+}
+
+func (clnt *Client) getUsableWritePolicyWithConfig(policy *WritePolicy, fn func(*WritePolicy, *DynConfig) *WritePolicy) *WritePolicy {
+	return fn(policy, clnt.dynConfig)
 }
 
 func (clnt *Client) getUsableScanPolicy(policy *ScanPolicy) *ScanPolicy {

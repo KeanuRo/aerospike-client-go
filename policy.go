@@ -16,6 +16,8 @@ package aerospike
 
 import (
 	"time"
+
+	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
 )
 
 // Policy Interface
@@ -204,4 +206,65 @@ func (p *BasePolicy) deadline() time.Time {
 
 func (p *BasePolicy) compress() bool {
 	return p.UseCompression
+}
+
+// copyBasePolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyBasePolicy(src *BasePolicy) *BasePolicy {
+	response := NewPolicy()
+	response.Txn = src.Txn
+	response.FilterExpression = src.FilterExpression
+	response.ReadModeAP = src.ReadModeAP
+	response.ReadModeSC = src.ReadModeSC
+	response.TotalTimeout = src.TotalTimeout
+	response.SocketTimeout = src.SocketTimeout
+	response.MaxRetries = src.MaxRetries
+	response.ReadTouchTTLPercent = src.ReadTouchTTLPercent
+	response.SleepBetweenRetries = src.SleepBetweenRetries
+	response.SleepMultiplier = src.SleepMultiplier
+	response.ExitFastOnExhaustedConnectionPool = src.ExitFastOnExhaustedConnectionPool
+	response.SendKey = src.SendKey
+	response.UseCompression = src.UseCompression
+	response.ReplicaPolicy = src.ReplicaPolicy
+
+	return response
+}
+
+// applyConfigToBasePolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the BasePolicy.
+func applyConfigToBasePolicy(policy *BasePolicy, config *dynconfig.Config) *BasePolicy {
+	if config != nil && config.Dynamic != nil && config.Dynamic.Read != nil {
+		var responsePolicy *BasePolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyBasePolicy(policy)
+		} else {
+			responsePolicy = NewPolicy()
+		}
+
+		if config.Dynamic.Read.ReadModeAp != nil {
+			responsePolicy.ReadModeAP = mapReadModeAPToReadModeAP(*config.Dynamic.Read.ReadModeAp)
+		}
+		if config.Dynamic.Read.ReadModeSc != nil {
+			responsePolicy.ReadModeSC = mapReadModeSCToReadModeSC(*config.Dynamic.Read.ReadModeSc)
+		}
+		if config.Dynamic.Read.TotalTimeout != nil {
+			responsePolicy.TotalTimeout = time.Duration(*config.Dynamic.Read.TotalTimeout)
+		}
+		if config.Dynamic.Read.SocketTimeout != nil {
+			responsePolicy.SocketTimeout = time.Duration(*config.Dynamic.Read.SocketTimeout)
+		}
+		if config.Dynamic.Read.MaxRetries != nil {
+			responsePolicy.MaxRetries = *config.Dynamic.Read.MaxRetries
+		}
+		if config.Dynamic.Read.SleepBetweenRetries != nil {
+			responsePolicy.SleepBetweenRetries = time.Duration(*config.Dynamic.Read.SleepBetweenRetries)
+		}
+		if config.Dynamic.Read.Replica != nil {
+			responsePolicy.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.Read.Replica)
+		}
+
+		return responsePolicy
+	} else {
+		return policy
+	}
 }

@@ -1,15 +1,16 @@
 package provider
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"time"
 
 	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
-	"github.com/stretchr/testify/assert/yaml"
+	"github.com/aerospike/aerospike-client-go/v8/logger"
+	"gopkg.in/yaml.v3"
 )
 
-const defaultFilePath = "~/aerospikeconfig.yaml"
+const defaultFilePath = "aerospikeconfig.yaml"
 
 type YamlConfigProvider struct {
 	configFilePath string
@@ -36,25 +37,39 @@ func (yc *YamlConfigProvider) LoadConfig() *dynconfig.Config {
 	if err != nil {
 		// handle error
 	}
+	if info == nil {
+		logger.Logger.Debug("File does not exist %s . Nothing to do...", defaultFilePath)
+		return nil
+	}
 
 	modTime := info.ModTime()
 	// Compare to previously stored modTime
 	if modTime.After(yc.oldModTime) {
-		// file changed
 		yc.oldModTime = modTime
-		// re-unmarshal your struct
 
-		data, err := os.ReadFile("config.yaml")
+		data, err := os.ReadFile(defaultFilePath)
 		if err != nil {
-			log.Fatalf("failed to read config file: %v", err)
+			logger.Logger.Error("Failed to read file %s. Error: %v", defaultFilePath, err)
 		}
 		var config dynconfig.Config
 		if err := yaml.Unmarshal(data, &config); err != nil {
-			log.Fatalf("failed to unmarshal yaml: %v", err)
+			fmt.Printf("Failed to serialize file %s to object. Error: %v", defaultFilePath, err)
+			logger.Logger.Error("Failed to serialize file %s to object. Error: %v", defaultFilePath, err)
 		}
 
 		return &config
 	}
 
+	return nil
+}
+
+type Duration time.Duration
+
+func (d *Duration) UnmarshalYAML(b []byte) error {
+	var value int64
+	if err := yaml.Unmarshal(b, &value); err != nil {
+		return err
+	}
+	*d = Duration(time.Duration(value))
 	return nil
 }
