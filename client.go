@@ -315,6 +315,7 @@ func (clnt *Client) GetNodeNames() []string {
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) PutPayload(policy *WritePolicy, key *Key, payload []byte) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	command, err := newWritePayloadCommand(clnt.cluster, policy, key, payload)
 	if err != nil {
 		return err
@@ -350,7 +351,8 @@ func (clnt *Client) Put(policy *WritePolicy, key *Key, binMap BinMap) Error {
 // This method avoids using the BinMap allocation and iteration and is lighter on GC.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) PutBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
-	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
+	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -377,6 +379,7 @@ func (clnt *Client) PutBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Append(policy *WritePolicy, key *Key, binMap BinMap) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -395,6 +398,7 @@ func (clnt *Client) Append(policy *WritePolicy, key *Key, binMap BinMap) Error {
 // AppendBins works the same as Append, but avoids BinMap allocation and iteration.
 func (clnt *Client) AppendBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -417,6 +421,7 @@ func (clnt *Client) AppendBins(policy *WritePolicy, key *Key, bins ...*Bin) Erro
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Prepend(policy *WritePolicy, key *Key, binMap BinMap) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -435,6 +440,7 @@ func (clnt *Client) Prepend(policy *WritePolicy, key *Key, binMap BinMap) Error 
 // PrependBins works the same as Prepend, but avoids BinMap allocation and iteration.
 func (clnt *Client) PrependBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -461,6 +467,7 @@ func (clnt *Client) PrependBins(policy *WritePolicy, key *Key, bins ...*Bin) Err
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Add(policy *WritePolicy, key *Key, binMap BinMap) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -479,6 +486,7 @@ func (clnt *Client) Add(policy *WritePolicy, key *Key, binMap BinMap) Error {
 // AddBins works the same as Add, but avoids BinMap allocation and iteration.
 func (clnt *Client) AddBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -503,6 +511,7 @@ func (clnt *Client) AddBins(policy *WritePolicy, key *Key, bins ...*Bin) Error {
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) Delete(policy *WritePolicy, key *Key) (bool, Error) {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -530,6 +539,7 @@ func (clnt *Client) Delete(policy *WritePolicy, key *Key) (bool, Error) {
 // If the record doesn't exist, it will return an error.
 func (clnt *Client) Touch(policy *WritePolicy, key *Key) Error {
 	policy = clnt.getUsableWritePolicy(policy)
+	//policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {

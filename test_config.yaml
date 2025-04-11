@@ -1,0 +1,522 @@
+metadata: 
+  type: object
+  description: Metadata about the application.
+  properties:
+    schema_version:
+      type: string
+      description: Version used for the dynamic configuration.
+    app_name:
+      type: string
+      description: Application name.
+    generation:
+      type: int
+      description: Version of the configuration as observed by the client.
+static:
+  type: object
+  description: Contains configuration values which will be loaded only on application startup/init time.
+  properties:
+    client:
+      type: object
+      description: Configuration which will be loaded on client init time.
+      properties:
+        config_interval:
+          type: int
+          description: The config interval defines the cycle at which the client checks for dynamic configuration changes.
+        max_connections_per_node:
+          type: int
+          description: Maximum number of synchronous connections per server node.
+        min_connections_per_node:
+          type: int
+          description: Minimum number of synchronous connections per server node.
+        async_max_connections_per_node:
+          type: int
+          description: Maximum number of asynchronous connections allowed per server node.
+        async_min_connections_per_node:
+          type: int
+          description: Minimum number of asynchronous connections allowed per server node.
+dynamic:
+  type: object
+  description: Contains configuration values which will be loaded on configured cycle of tendInterval.
+  properties:
+    client:
+      type: object
+      description: Configuration which will be loaded on client init time.
+      properties:
+        timeout:
+          type: int
+          description: Cluster tend info call timeout in milliseconds.
+        error_rate_window:
+          type: int
+          description: The number of cluster tend iterations that defines the window for `maxErrorRate`.
+        max_error_rate:
+          type: int
+          description: Maximum number of errors allowed per node per `errorRateWindow` before backoff algorithm throws `com.aerospike.client.AerospikeException.Backoff` on database commands to that node.
+        fail_if_not_connected:
+          type: bool
+          description: Should cluster instantiation fail if the client fails to connect to a seed or all the seed's peers.
+        login_timeout:
+          type: int
+          description: Login timeout in milliseconds.
+        max_socket_idle:
+          type: int
+          description: Maximum socket idle in seconds.
+        rack_aware:
+          type: boolean
+          description: Track server rack data.
+        rack_ids:
+          type: array
+          items:
+            type: int
+        tend_interval:
+          type: int
+          description: Interval in milliseconds between cluster tends by maintenance thread.
+        use_service_alternative:
+          type: boolean
+          description: Should use "services-alternate" instead of "services" in info request during cluster tending.
+    read:
+      type: object
+      description: Command policy attributes used in all database commands.
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        fail_on_filtered_out:
+          type: boolean
+          description: Throw exception if filterExp is defined and that filter evaluates to false (command ignored).
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+    write: 
+      type: object
+      description: Command policy attributes used in all database commands.
+      properties:
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        fail_on_filtered_out:
+          type: boolean
+          description: Throw exception if filterExp is defined and that filter evaluates to false (command ignored).
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        send_key:
+          type: boolean
+          description: Send user defined key in addition to hash digest on both reads and writes.
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        durable_delete:
+          type: boolean
+          description: If the command results in a record deletion, leave a tombstone for the record.
+    query:
+      type: object
+      description: Query policy.
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        include_bin_data:
+          type: boolean
+          description: Should bin data be retrieved. If false, only record digests (and user keys if stored on the server) are retrieved.
+        info_timeout:
+          type: int
+          description: Timeout in milliseconds for "cluster-stable" info command that is run when `failOnClusterChange` is true and server version is less than 6.0.
+        record_queue_size:
+          type: int
+          description: Number of records to place in queue before blocking.
+        expected_duration:
+          type: string
+          description: Expected query duration. The server treats the query in different ways depending on the expected duration. This field is ignored for aggregation queries, background queries and server versions less than 6.0.
+          enum:
+            - LONG
+            - SHORT
+            - LONG_RELAX_AP
+    scan: 
+      type: object
+      description: Scan policy
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        concurrent_nodes:
+          type: boolean
+          description: Should scan requests be issued in parallel.
+        max_concurrent_nodes:
+          type: int
+          description: Maximum number of concurrent requests to server nodes at any point in time.
+    batch_read:
+      type: object
+      description: Batch read policy.
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        max_concurrent_threads:
+          type: int
+          description: This field is ignored and deprecated. Sync batch node commands are now always issued using virtual threads in parallel.
+        allow_inline:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for in-memory namespaces.
+        allow_inline_ssd:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for SSD namespaces.
+        respond_all_keys:
+          type: boolean
+          description: Should all batch keys be attempted regardless of errors. This field is used on both the client and server.
+    batch_write:
+      type: object
+      description: Batch write policy.
+      properties:
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        fail_on_filtered_out:
+          type: boolean
+          description: Throw exception if filterExp is defined and that filter evaluates to false (command ignored).
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        durable_delete:
+          type: boolean
+          description: If the command results in a record deletion, leave a tombstone for the record.
+        send_key:
+          type: boolean
+          description: Send user defined key in addition to hash digest on both reads and writes.
+        max_concurrent_threads:
+          type: int
+          description: This field is ignored and deprecated. Sync batch node commands are now always issued using virtual threads in parallel.
+        allow_inline:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for in-memory namespaces.
+        allow_inline_ssd:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for SSD namespaces.
+        respond_all_keys:
+          type: boolean
+          description: Should all batch keys be attempted regardless of errors. This field is used on both the client and server.
+    batch_udf: 
+      type: object
+      description: Batch udf policy.
+      properties:
+        durable_delete:
+          type: boolean
+          description: If the command results in a record deletion, leave a tombstone for the record.
+        send_key:
+          type: boolean
+          description: Send user defined key in addition to hash digest on both reads and writes.
+    batch_delete: 
+      type: object
+      description: Batch delete policy.
+      properties:
+        durable_delete:
+          type: boolean
+          description: If the command results in a record deletion, leave a tombstone for the record.
+        send_key:
+          type: boolean
+          description: Send user defined key in addition to hash digest on both reads and writes.
+    txn_roll:
+      type: object
+      description: Transaction Roll policy.
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        max_concurrent_threads:
+          type: int
+          description: This field is ignored and deprecated. Sync batch node commands are now always issued using virtual threads in parallel.
+        allow_inline:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for in-memory namespaces.
+        allow_inline_ssd:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for SSD namespaces.
+        respond_all_keys:
+          type: boolean
+          description: Should all batch keys be attempted regardless of errors. This field is used on both the client and server.
+    txn_verify:
+      type: object
+      description: Transaction Verify policy.
+      properties:
+        read_mode_ap:
+          type: string
+          description: Read policy for AP (availability) namespaces.
+          enum:
+            - ONE
+            - ALL
+        read_mode_sc:
+          type: string
+          description: Read policy for SC (strong consistency) namespaces.
+          enum:
+            - SESSION
+            - LINEARIZE
+            - ALLOW_REPLICA
+            - ALLOW_UNAVAILABLE
+        connect_timeout:
+          type: int
+          description: Socket connect timeout in milliseconds. If connectTimeout greater than zero, it will be applied to creating a connection plus optional user authentication. Otherwise, socketTimeout or totalTimeout will be used depending on their values.
+        replica:
+          type: string
+          description: Replica algorithm used to determine the target node for a partition derived from a key or requested in a scan/query.
+          enum:
+            - MASTER
+            - MASTER_PROLES
+            - SEQUENCE
+            - PREFER_RACK
+        sleep_between_retries:
+          type: int
+          description: Milliseconds to sleep between retries.  Enter zero to skip sleep.
+        socket_timeout:
+          type: int
+          description: Socket idle timeout in milliseconds when processing a database command.
+        timeout_delay:
+          type: int
+          description: Delay milliseconds after socket read timeout in an attempt to recover the socket in the background.  Processing continues on the original command and the user is still notified at the original command timeout.
+        total_timeout:
+          type: int
+          description: Total command timeout in milliseconds.
+        max_retries:
+          type: int
+          description: Maximum number of retries before aborting the current command.
+        max_concurrent_threads:
+          type: int
+          description: This field is ignored and deprecated. Sync batch node commands are now always issued using virtual threads in parallel.
+        allow_inline:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for in-memory namespaces.
+        allow_inline_ssd:
+          type: boolean
+          description: Allow batch to be processed immediately in the server's receiving thread for SSD namespaces.
+        respond_all_keys:
+          type: boolean
+          description: Should all batch keys be attempted regardless of errors. This field is used on both the client and server.
+    metrics:
+      type: object
+      description: Metrics policy parameters.
+      enable:
+        type: boolean
+        description: Enable metrics collection.
+      latency_shift:
+        type: int
+        description: Defines buckets. 
+      latency_columns: 
+        type: int 
+        description: Latency columns defines the number of elapsed time range buckets in latency histograms.
