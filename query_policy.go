@@ -16,8 +16,6 @@ package aerospike
 
 import (
 	"time"
-
-	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
 )
 
 // QueryPolicy encapsulates parameters for policy attributes used in query operations.
@@ -65,7 +63,12 @@ func NewQueryPolicy() *QueryPolicy {
 
 // copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
 func copyQueryPolicy(src *QueryPolicy) *QueryPolicy {
+	if src == nil {
+		return nil
+	}
+
 	response := NewQueryPolicy()
+
 	response.Txn = src.Txn
 	response.FilterExpression = src.FilterExpression
 	response.ReadModeAP = src.ReadModeAP
@@ -81,14 +84,24 @@ func copyQueryPolicy(src *QueryPolicy) *QueryPolicy {
 	response.UseCompression = src.UseCompression
 	response.ReplicaPolicy = src.ReplicaPolicy
 	response.IncludeBinData = src.IncludeBinData
+	response.ExpectedDuration = src.ExpectedDuration
 
 	return response
 }
 
 // applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
 // will NOT override any custom settings in the QueryPolicy.
-func applyConfigToQueryPolicy(policy *QueryPolicy, config *dynconfig.Config) *QueryPolicy {
-	if config != nil && config.Dynamic != nil && config.Dynamic.Read != nil {
+func applyConfigToQueryPolicy(policy *QueryPolicy, dynConfig *DynConfig) *QueryPolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.Query != nil {
 		var responsePolicy *QueryPolicy
 		if policy != nil {
 			// Copy the existing write policy to preserve any custom settings.
@@ -118,9 +131,11 @@ func applyConfigToQueryPolicy(policy *QueryPolicy, config *dynconfig.Config) *Qu
 		if config.Dynamic.Query.Replica != nil {
 			responsePolicy.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.Query.Replica)
 		}
-
 		if config.Dynamic.Query.IncludeBinData != nil {
 			responsePolicy.IncludeBinData = *config.Dynamic.Query.IncludeBinData
+		}
+		if config.Dynamic.Query.ExpectedDuration != nil {
+			responsePolicy.ExpectedDuration = mapQueryDuration(*config.Dynamic.Query.ExpectedDuration)
 		}
 
 		return responsePolicy

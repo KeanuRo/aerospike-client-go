@@ -80,3 +80,82 @@ func (bup *BatchUDFPolicy) toWritePolicy(bp *BatchPolicy) *WritePolicy {
 	}
 	return wp
 }
+
+func (bup *BatchUDFPolicy) toWritePolicyWithConfig(bp *BatchPolicy, dynConfig *DynConfig) *WritePolicy {
+	wp := bp.toWritePolicy()
+
+	if bup != nil {
+		if bup.FilterExpression != nil {
+			wp.FilterExpression = bup.FilterExpression
+		}
+		wp.CommitLevel = bup.CommitLevel
+		wp.Expiration = bup.Expiration
+		wp.DurableDelete = bup.DurableDelete
+		wp.SendKey = bup.SendKey
+	}
+
+	config := dynConfig.config
+	if config != nil && config.Dynamic.BatchUdf != nil {
+		if config.Dynamic.BatchWrite.DurableDelete != nil {
+			wp.DurableDelete = *config.Dynamic.BatchWrite.DurableDelete
+		}
+		if config.Dynamic.BatchWrite.SendKey != nil {
+			wp.SendKey = *config.Dynamic.BatchWrite.SendKey
+		}
+	}
+
+	return wp
+}
+
+// copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyBatchUDFPolicy(src *BatchUDFPolicy) *BatchUDFPolicy {
+	if src == nil {
+		return nil
+	}
+
+	response := NewBatchUDFPolicy()
+
+	response.FilterExpression = src.FilterExpression
+	response.FilterExpression = src.FilterExpression
+	response.CommitLevel = src.CommitLevel
+	response.Expiration = src.Expiration
+	response.DurableDelete = src.DurableDelete
+	response.OnLockingOnly = src.OnLockingOnly
+	response.SendKey = src.SendKey
+
+	return response
+}
+
+// applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the QueryPolicy.
+func applyConfigToBatchUDFPolicy(policy *BatchUDFPolicy, dynConfig *DynConfig) *BatchUDFPolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.BatchUdf != nil {
+		var responsePolicy *BatchUDFPolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyBatchUDFPolicy(policy)
+		} else {
+			responsePolicy = NewBatchUDFPolicy()
+		}
+
+		if config.Dynamic.BatchWrite.DurableDelete != nil {
+			responsePolicy.DurableDelete = *config.Dynamic.BatchUdf.DurableDelete
+		}
+		if config.Dynamic.BatchWrite.SendKey != nil {
+			responsePolicy.SendKey = *config.Dynamic.BatchUdf.SendKey
+		}
+
+		return responsePolicy
+	} else {
+		return policy
+	}
+}

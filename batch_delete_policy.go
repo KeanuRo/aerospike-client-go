@@ -73,3 +73,83 @@ func (bdp *BatchDeletePolicy) toWritePolicy(bp *BatchPolicy) *WritePolicy {
 	}
 	return wp
 }
+
+func (bdp *BatchDeletePolicy) toWritePolicyWithConfig(bp *BatchPolicy, dynConfig *DynConfig) *WritePolicy {
+	wp := bp.toWritePolicy()
+
+	if bdp != nil {
+		if bdp.FilterExpression != nil {
+			wp.FilterExpression = bdp.FilterExpression
+		}
+		wp.CommitLevel = bdp.CommitLevel
+		wp.GenerationPolicy = bdp.GenerationPolicy
+		wp.Generation = bdp.Generation
+		wp.DurableDelete = bdp.DurableDelete
+		wp.SendKey = bdp.SendKey
+	}
+
+	config := dynConfig.config
+	if config != nil && config.Dynamic.BatchWrite != nil {
+		if config.Dynamic.BatchWrite.DurableDelete != nil {
+			wp.DurableDelete = *config.Dynamic.BatchWrite.DurableDelete
+		}
+		if config.Dynamic.BatchWrite.SendKey != nil {
+			wp.SendKey = *config.Dynamic.BatchWrite.SendKey
+		}
+	}
+
+	return wp
+}
+
+// copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyBatchDeletePolicy(src *BatchDeletePolicy) *BatchDeletePolicy {
+	if src == nil {
+		return nil
+	}
+
+	response := NewBatchDeletePolicy()
+
+	response.FilterExpression = src.FilterExpression
+	response.FilterExpression = src.FilterExpression
+	response.CommitLevel = src.CommitLevel
+	response.GenerationPolicy = src.GenerationPolicy
+	response.Generation = src.Generation
+	response.DurableDelete = src.DurableDelete
+	response.SendKey = src.SendKey
+
+	return response
+}
+
+// applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the QueryPolicy.
+func applyConfigToBatchDeletePolicy(policy *BatchDeletePolicy, dynConfig *DynConfig) *BatchDeletePolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.BatchWrite != nil {
+		var responsePolicy *BatchDeletePolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyBatchDeletePolicy(policy)
+		} else {
+			responsePolicy = NewBatchDeletePolicy()
+		}
+
+		if config.Dynamic.BatchWrite.DurableDelete != nil {
+			responsePolicy.DurableDelete = *config.Dynamic.BatchWrite.DurableDelete
+		}
+		if config.Dynamic.BatchWrite.SendKey != nil {
+			responsePolicy.SendKey = *config.Dynamic.BatchWrite.SendKey
+		}
+
+		return responsePolicy
+	} else {
+		return policy
+	}
+}

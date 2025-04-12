@@ -49,7 +49,7 @@ const (
 	LONG_RELAX_AP
 )
 
-func mapQueryDuration(expectedDuration dynconfig.ExpectedDuration) QueryDuration {
+func mapQueryDuration(expectedDuration dynconfig.QueryDuration) QueryDuration {
 	switch expectedDuration {
 	case dynconfig.LONG:
 		return LONG

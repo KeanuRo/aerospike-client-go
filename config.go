@@ -19,13 +19,13 @@ type DynConfig struct {
 	config             *dynconfig.Config
 	wgConfig           sync.WaitGroup
 	configInitialized  *atomic.Bool
-	clientPolicy       *ClientPolicy
+	clientPolicy       ClientPolicy
 	configWatchChannel chan struct{}
 }
 
 func NewDynConfig(policy *ClientPolicy) *DynConfig {
 	dynConfig := &DynConfig{
-		clientPolicy:       policy,
+		clientPolicy:       *policy,
 		configWatchChannel: make(chan struct{}),
 		configInitialized:  &atomic.Bool{},
 	}
@@ -46,6 +46,8 @@ func register(provider *dynconfig.ConfigProvider) {
 }
 
 func (dc *DynConfig) loadConfig() error {
+	dc.lock.Lock()
+	defer dc.lock.Unlock()
 	configProviderMu.Lock()
 	defer configProviderMu.Unlock()
 
@@ -62,17 +64,12 @@ func (dc *DynConfig) loadConfig() error {
 
 func (dc *DynConfig) providerLoadConfig() {
 	loadedConfig := (*configProvider).LoadConfig()
-	dc.lock.Lock()
 	if loadedConfig != nil {
 		dc.config.Dynamic = loadedConfig.Dynamic
 	}
-	dc.lock.Unlock()
 }
 
 func (dc *DynConfig) initConfig() {
-	dc.lock.RLock()
-	defer dc.lock.RUnlock()
-
 	loadedConfig := (*configProvider).LoadConfig()
 	if loadedConfig != nil {
 		dc.config = loadedConfig

@@ -1422,3 +1422,20 @@ func ExpUnknown() *Expression {
 		arguments: nil,
 	}
 }
+
+func copyExpression(exp *Expression) *Expression {
+	if exp == nil {
+		return nil
+	}
+	return &Expression{
+		cmd:       exp.cmd,
+		val:       exp.val,
+		bin:       exp.bin,
+		flags:     exp.flags,
+		module:    exp.module,
+		exps:      exp.exps,
+		arguments: exp.arguments,
+		bytes:     nil,
+	}
+}
+

@@ -14,6 +14,8 @@
 
 package aerospike
 
+import "time"
+
 // BatchReadPolicy attributes used in batch read commands.
 type BatchReadPolicy struct {
 	// FilterExpression is the optional expression filter. If FilterExpression exists and evaluates to false, the specific batch key
@@ -67,4 +69,95 @@ func (brp *BatchReadPolicy) toWritePolicy(bp *BatchPolicy) *WritePolicy {
 		wp.ReadTouchTTLPercent = brp.ReadTouchTTLPercent
 	}
 	return wp
+}
+
+func (brp *BatchReadPolicy) toWritePolicyWithConfig(bp *BatchPolicy, dynConfig *DynConfig) *WritePolicy {
+	wp := bp.toWritePolicy()
+
+	if brp != nil {
+		if brp.FilterExpression != nil {
+			wp.FilterExpression = brp.FilterExpression
+		}
+
+		wp.ReadModeAP = brp.ReadModeAP
+		wp.ReadModeSC = brp.ReadModeSC
+		wp.ReadTouchTTLPercent = brp.ReadTouchTTLPercent
+	}
+
+	config := dynConfig.config
+	if config != nil && config.Dynamic.BatchRead != nil {
+		if config.Dynamic.BatchRead.ReadModeAp != nil {
+			wp.ReadModeAP = mapReadModeAPToReadModeAP(*config.Dynamic.BatchRead.ReadModeAp)
+		}
+		if config.Dynamic.BatchRead.ReadModeSc != nil {
+			wp.ReadModeSC = mapReadModeSCToReadModeSC(*config.Dynamic.BatchRead.ReadModeSc)
+		}
+		if config.Dynamic.BatchRead.Replica != nil {
+			wp.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.BatchRead.Replica)
+		}
+		if config.Dynamic.BatchRead.SleepBetweenRetries != nil {
+			wp.SleepBetweenRetries = time.Duration(*config.Dynamic.BatchRead.SleepBetweenRetries)
+		}
+		if config.Dynamic.BatchRead.SocketTimeout != nil {
+			wp.SocketTimeout = time.Duration(*config.Dynamic.BatchRead.SocketTimeout)
+		}
+		if config.Dynamic.BatchRead.TotalTimeout != nil {
+			wp.TotalTimeout = time.Duration(*config.Dynamic.BatchRead.TotalTimeout)
+		}
+		if config.Dynamic.BatchRead.MaxRetries != nil {
+			wp.MaxRetries = *config.Dynamic.BatchRead.MaxRetries
+		}
+	}
+
+	return wp
+}
+
+// copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyBatchReadPolicy(src *BatchReadPolicy) *BatchReadPolicy {
+	if src == nil {
+		return nil
+	}
+
+	response := NewBatchReadPolicy()
+
+	response.FilterExpression = src.FilterExpression
+	response.ReadModeAP = src.ReadModeAP
+	response.ReadModeSC = src.ReadModeSC
+	response.ReadTouchTTLPercent = src.ReadTouchTTLPercent
+
+	return response
+}
+
+// applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the QueryPolicy.
+func applyConfigToBatchReadPolicy(policy *BatchReadPolicy, dynConfig *DynConfig) *BatchReadPolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.BatchRead != nil {
+		var responsePolicy *BatchReadPolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyBatchReadPolicy(policy)
+		} else {
+			responsePolicy = NewBatchReadPolicy()
+		}
+
+		if config.Dynamic.BatchRead.ReadModeAp != nil {
+			responsePolicy.ReadModeAP = mapReadModeAPToReadModeAP(*config.Dynamic.BatchRead.ReadModeAp)
+		}
+		if config.Dynamic.BatchRead.ReadModeSc != nil {
+			responsePolicy.ReadModeSC = mapReadModeSCToReadModeSC(*config.Dynamic.BatchRead.ReadModeSc)
+		}
+
+		return responsePolicy
+	} else {
+		return policy
+	}
 }

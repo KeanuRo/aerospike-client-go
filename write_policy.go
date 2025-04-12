@@ -107,7 +107,13 @@ func NewWritePolicy(generation, expiration uint32) *WritePolicy {
 
 // copyWritePolicy creates a new WritePolicy instance and copies the values from the source WritePolicy.
 func copyWritePolicy(src *WritePolicy) *WritePolicy {
+	if src == nil {
+		return nil
+	}
+
 	response := NewWritePolicy(0, 0)
+
+	response.BasePolicy = src.BasePolicy
 	response.Txn = src.Txn
 	response.FilterExpression = src.FilterExpression
 	response.ReadModeAP = src.ReadModeAP
@@ -181,7 +187,6 @@ func applyConfigToWritePolicy(policy *WritePolicy, dynConfig *DynConfig) *WriteP
 		}
 
 		return responseWritePolicy
-
 	} else {
 		return policy
 	}

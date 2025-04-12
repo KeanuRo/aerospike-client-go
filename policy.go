@@ -16,8 +16,6 @@ package aerospike
 
 import (
 	"time"
-
-	dynconfig "github.com/aerospike/aerospike-client-go/v8/config"
 )
 
 // Policy Interface
@@ -231,7 +229,16 @@ func copyBasePolicy(src *BasePolicy) *BasePolicy {
 
 // applyConfigToBasePolicy applies the dynamic configuration and generates a new policy. This function
 // will NOT override any custom settings in the BasePolicy.
-func applyConfigToBasePolicy(policy *BasePolicy, config *dynconfig.Config) *BasePolicy {
+func applyConfigToBasePolicy(policy *BasePolicy, dynConfig *DynConfig) *BasePolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
 	if config != nil && config.Dynamic != nil && config.Dynamic.Read != nil {
 		var responsePolicy *BasePolicy
 		if policy != nil {
@@ -262,7 +269,6 @@ func applyConfigToBasePolicy(policy *BasePolicy, config *dynconfig.Config) *Base
 		if config.Dynamic.Read.Replica != nil {
 			responsePolicy.ReplicaPolicy = mapReplicaToReplicaPolicy(*config.Dynamic.Read.Replica)
 		}
-
 		return responsePolicy
 	} else {
 		return policy

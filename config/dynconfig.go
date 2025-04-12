@@ -85,19 +85,19 @@ type Write struct {
 }
 
 type Query struct {
-	ReadModeAp          *ReadModeAp `yaml:"read_mode_ap"`
-	ReadModeSc          *ReadModeSc `yaml:"read_mode_sc"`
-	ConnectTimeout      *int        `yaml:"connect_timeout"`
-	Replica             *Replica    `yaml:"replica"`
-	SleepBetweenRetries *Duration   `yaml:"sleep_between_retries"`
-	SocketTimeout       *Duration   `yaml:"socket_timeout"`
-	TimeoutDelay        *int        `yaml:"timeout_delay"`
-	TotalTimeout        *Duration   `yaml:"total_timeout"`
-	MaxRetries          *int        `yaml:"max_retries"`
-	IncludeBinData      *bool       `yaml:"include_bin_data"`
-	InfoTimeout         *int        `yaml:"info_timeout"`
-	RecordQueueSize     *int        `yaml:"record_queue_size"`
-	ExpectedDuration    *Duration   `yaml:"expected_duration"`
+	ReadModeAp          *ReadModeAp    `yaml:"read_mode_ap"`
+	ReadModeSc          *ReadModeSc    `yaml:"read_mode_sc"`
+	ConnectTimeout      *int           `yaml:"connect_timeout"`
+	Replica             *Replica       `yaml:"replica"`
+	SleepBetweenRetries *Duration      `yaml:"sleep_between_retries"`
+	SocketTimeout       *Duration      `yaml:"socket_timeout"`
+	TimeoutDelay        *int           `yaml:"timeout_delay"`
+	TotalTimeout        *Duration      `yaml:"total_timeout"`
+	MaxRetries          *int           `yaml:"max_retries"`
+	IncludeBinData      *bool          `yaml:"include_bin_data"`
+	InfoTimeout         *int           `yaml:"info_timeout"`
+	RecordQueueSize     *int           `yaml:"record_queue_size"`
+	ExpectedDuration    *QueryDuration `yaml:"expected_duration"`
 }
 
 type Scan struct {
@@ -241,15 +241,15 @@ var replica = map[Replica]string{
 	PREFER_RACK:   "PREFER_RACK",
 }
 
-type ExpectedDuration int
+type QueryDuration int
 
 const (
-	LONG ExpectedDuration = iota
+	LONG QueryDuration = iota
 	SHORT
 	LONG_RELAX_AP
 )
 
-var duration = map[ExpectedDuration]string{
+var queryDuration = map[QueryDuration]string{
 	LONG:          "LONG",
 	SHORT:         "SHORT",
 	LONG_RELAX_AP: "LONG_RELAX_AP",

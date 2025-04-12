@@ -55,3 +55,4 @@ func mapReadModeSCToReadModeSC(readModeSC dynconfig.ReadModeSc) ReadModeSC {
 		return ReadModeSCSession
 	}
 }
+
