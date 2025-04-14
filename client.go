@@ -575,7 +575,7 @@ func (clnt *Client) Exists(policy *BasePolicy, key *Key) (bool, Error) {
 // The policy can be used to specify timeouts.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) BatchExists(policy *BatchPolicy, keys []*Key) ([]bool, Error) {
-	policy = clnt.getUsableBatchPolicy(policy)
+	policy = clnt.getUsableBatchPolicyWithConfig(policy, applyConfigToBatchPolicy)
 
 	if policy.Txn != nil {
 		if err := policy.Txn.prepareReadForKeys(keys); err != nil {
@@ -1035,7 +1035,7 @@ func (clnt *Client) ScanNode(apolicy *ScanPolicy, node *Node, namespace string, 
 // This method is only supported by Aerospike 3+ servers.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) RegisterUDFFromFile(policy *WritePolicy, clientPath string, serverPath string, language Language) (*RegisterTask, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	udfBody, err := os.ReadFile(clientPath)
 	if err != nil {
 		return nil, newCommonError(err)
@@ -1052,7 +1052,7 @@ func (clnt *Client) RegisterUDFFromFile(policy *WritePolicy, clientPath string, 
 // This method is only supported by Aerospike 3+ servers.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) RegisterUDF(policy *WritePolicy, udfBody []byte, serverPath string, language Language) (*RegisterTask, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	content := base64.StdEncoding.EncodeToString(udfBody)
 
 	var strCmd bytes.Buffer
@@ -1110,7 +1110,7 @@ func (clnt *Client) RegisterUDF(policy *WritePolicy, udfBody []byte, serverPath 
 // This method is only supported by Aerospike 3+ servers.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) RemoveUDF(policy *WritePolicy, udfName string) (*RemoveTask, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	var strCmd bytes.Buffer
 	// errors are to remove errcheck warnings
 	// they will always be nil as stated in golang docs
@@ -1135,7 +1135,7 @@ func (clnt *Client) RemoveUDF(policy *WritePolicy, udfName string) (*RemoveTask,
 // This method is only supported by Aerospike 3+ servers.
 // If the policy is nil, the default relevant policy will be used.
 func (clnt *Client) ListUDF(policy *BasePolicy) ([]*UDF, Error) {
-	policy = clnt.getUsablePolicy(policy)
+	policy = clnt.getUsablePolicyWithConfig(policy, applyConfigToBasePolicy)
 
 	var strCmd bytes.Buffer
 	// errors are to remove errcheck warnings
@@ -1208,7 +1208,7 @@ func (clnt *Client) Execute(policy *WritePolicy, key *Key, packageName string, f
 }
 
 func (clnt *Client) execute(policy *WritePolicy, key *Key, packageName string, functionName string, args ...Value) (*Record, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	if policy.Txn != nil {
 		if err := txnMonitor.addKey(clnt.cluster, policy, key); err != nil {
@@ -1250,7 +1250,7 @@ func (clnt *Client) QueryExecute(policy *QueryPolicy,
 	}
 
 	policy = clnt.getUsableQueryPolicyWithConfig(policy, applyConfigToQueryPolicy)
-	writePolicy = clnt.getUsableWritePolicy(writePolicy)
+	writePolicy = clnt.getUsableWritePolicyWithConfig(writePolicy, applyConfigToWritePolicy)
 
 	nodes := clnt.cluster.GetNodes()
 	if len(nodes) == 0 {
@@ -1523,7 +1523,7 @@ func (clnt *Client) CreateIndex(
 	binName string,
 	indexType IndexType,
 ) (*IndexTask, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	return clnt.CreateComplexIndex(policy, namespace, setName, indexName, binName, indexType, ICT_DEFAULT)
 }
 
@@ -1544,7 +1544,7 @@ func (clnt *Client) CreateComplexIndex(
 	indexCollectionType IndexCollectionType,
 	ctx ...*CDTContext,
 ) (*IndexTask, Error) {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 
 	var strCmd bytes.Buffer
 	strCmd.WriteString("sindex-create:ns=")
@@ -1611,7 +1611,7 @@ func (clnt *Client) DropIndex(
 	setName string,
 	indexName string,
 ) Error {
-	policy = clnt.getUsableWritePolicy(policy)
+	policy = clnt.getUsableWritePolicyWithConfig(policy, applyConfigToWritePolicy)
 	var strCmd bytes.Buffer
 	strCmd.WriteString("sindex-delete:ns=")
 	strCmd.WriteString(namespace)
@@ -2095,6 +2095,15 @@ func (clnt *Client) getUsableBatchPolicy(policy *BatchPolicy) *BatchPolicy {
 		return NewBatchPolicy()
 	}
 	return policy
+}
+
+func (clnt *Client) getUsableBatchPolicyWithConfig(policy *BatchPolicy, fn func(*BatchPolicy, *DynConfig) *BatchPolicy) *BatchPolicy {
+	if policy == nil {
+		if clnt.DefaultBatchPolicy != nil {
+			return fn(clnt.DefaultBatchPolicy, clnt.dynConfig)
+		}
+	}
+	return fn(policy, clnt.dynConfig)
 }
 
 func (clnt *Client) getUsableBaseBatchWritePolicy(policy *BatchPolicy) *BatchPolicy {

@@ -121,9 +121,9 @@ type BatchRead struct {
 	FailOnFilteredOut   *bool       `yaml:"fail_on_filtered_out"`
 	Replica             *Replica    `yaml:"replica"`
 	SleepBetweenRetries *int        `yaml:"sleep_between_retries"`
-	SocketTimeout       *int        `yaml:"socket_timeout"`
+	SocketTimeout       *Duration        `yaml:"socket_timeout"`
 	TimeoutDelay        *int        `yaml:"timeout_delay"`
-	TotalTimeout        *int        `yaml:"total_timeout"`
+	TotalTimeout        *Duration        `yaml:"total_timeout"`
 	MaxRetries          *int        `yaml:"max_retries"`
 	MaxConcurrentThread *int        `yaml:"max_concurrent_thread"`
 	AllowInline         *bool       `yaml:"allow_inline"`

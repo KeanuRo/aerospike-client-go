@@ -113,7 +113,6 @@ func copyWritePolicy(src *WritePolicy) *WritePolicy {
 
 	response := NewWritePolicy(0, 0)
 
-	response.BasePolicy = src.BasePolicy
 	response.Txn = src.Txn
 	response.FilterExpression = src.FilterExpression
 	response.ReadModeAP = src.ReadModeAP

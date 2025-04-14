@@ -209,6 +209,7 @@ func (p *BasePolicy) compress() bool {
 // copyBasePolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
 func copyBasePolicy(src *BasePolicy) *BasePolicy {
 	response := NewPolicy()
+
 	response.Txn = src.Txn
 	response.FilterExpression = src.FilterExpression
 	response.ReadModeAP = src.ReadModeAP

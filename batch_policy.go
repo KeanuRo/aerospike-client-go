@@ -14,6 +14,8 @@
 
 package aerospike
 
+import "time"
+
 // BatchPolicy encapsulates parameters for policy attributes used in write operations.
 // This object is passed into methods where database writes can occur.
 type BatchPolicy struct {
@@ -119,4 +121,90 @@ func (p *BatchPolicy) toWritePolicy() *WritePolicy {
 		wp.BasePolicy = p.BasePolicy
 	}
 	return wp
+}
+
+// copyQueryPolicy creates a new BasePolicy instance and copies the values from the source BasePolicy.
+func copyBatchPolicy(src *BatchPolicy) *BatchPolicy {
+	if src == nil {
+		return nil
+	}
+
+	response := NewBatchPolicy()
+
+	response.Txn = src.Txn
+	response.FilterExpression = src.FilterExpression
+	response.ReadModeAP = src.ReadModeAP
+	response.ReadModeSC = src.ReadModeSC
+	response.TotalTimeout = src.TotalTimeout
+	response.SocketTimeout = src.SocketTimeout
+	response.MaxRetries = src.MaxRetries
+	response.ReadTouchTTLPercent = src.ReadTouchTTLPercent
+	response.SleepBetweenRetries = src.SleepBetweenRetries
+	response.SleepMultiplier = src.SleepMultiplier
+	response.ExitFastOnExhaustedConnectionPool = src.ExitFastOnExhaustedConnectionPool
+	response.SendKey = src.SendKey
+	response.UseCompression = src.UseCompression
+	response.ReplicaPolicy = src.ReplicaPolicy
+	response.ConcurrentNodes = src.ConcurrentNodes
+	response.AllowInline = src.AllowInline
+	response.AllowInlineSSD = src.AllowInlineSSD
+	response.RespondAllKeys = src.RespondAllKeys
+	response.AllowPartialResults = src.AllowPartialResults
+
+	return response
+}
+
+// applyConfigToQueryPolicy applies the dynamic configuration and generates a new policy. This function
+// will NOT override any custom settings in the QueryPolicy.
+func applyConfigToBatchPolicy(policy *BatchPolicy, dynConfig *DynConfig) *BatchPolicy {
+	config := dynConfig.config
+
+	if config == nil && !dynConfig.configInitialized.Load() {
+		// On initial load it is possible that the config is not yet loaded. This will kick things off to make sure
+		// config is loaded.
+		dynConfig.loadConfig()
+		config = dynConfig.config
+	}
+
+	if config != nil && config.Dynamic != nil && config.Dynamic.BatchRead != nil {
+		var responsePolicy *BatchPolicy
+		if policy != nil {
+			// Copy the existing write policy to preserve any custom settings.
+			responsePolicy = copyBatchPolicy(policy)
+		} else {
+			responsePolicy = NewBatchPolicy()
+		}
+
+		if config.Dynamic.BatchRead.ReadModeAp != nil {
+			responsePolicy.ReadModeAP = mapReadModeAPToReadModeAP(*config.Dynamic.BatchRead.ReadModeAp)
+		}
+		if config.Dynamic.BatchRead.ReadModeSc != nil {
+			responsePolicy.ReadModeSC = mapReadModeSCToReadModeSC(*config.Dynamic.BatchRead.ReadModeSc)
+		}
+		if config.Dynamic.BatchRead.TotalTimeout != nil {
+			responsePolicy.TotalTimeout = time.Duration(*config.Dynamic.BatchRead.TotalTimeout)
+		}
+		if config.Dynamic.BatchRead.SocketTimeout != nil {
+			responsePolicy.SocketTimeout = time.Duration(*config.Dynamic.BatchRead.SocketTimeout)
+		}
+		if config.Dynamic.BatchRead.MaxRetries != nil {
+			responsePolicy.MaxRetries = *config.Dynamic.BatchRead.MaxRetries
+		}
+		if config.Dynamic.BatchRead.SleepBetweenRetries != nil {
+			responsePolicy.SleepBetweenRetries = time.Duration(*config.Dynamic.BatchRead.SleepBetweenRetries)
+		}
+		if config.Dynamic.BatchRead.AllowInline != nil {
+			responsePolicy.AllowInline = *config.Dynamic.BatchRead.AllowInline
+		}
+		if config.Dynamic.BatchRead.AllowInlineSSD != nil {
+			responsePolicy.AllowInlineSSD = *config.Dynamic.BatchRead.AllowInlineSSD
+		}
+		if config.Dynamic.BatchRead.RespondAllKeys != nil {
+			responsePolicy.RespondAllKeys = *config.Dynamic.BatchRead.RespondAllKeys
+		}
+
+		return responsePolicy
+	} else {
+		return policy
+	}
 }
